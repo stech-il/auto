@@ -19,12 +19,12 @@ npm install
 npm start
 ```
 
-**העלאה ל-Render:**
-- צור Web Service חדש
-- חבר את ה-repo או העלה את תיקיית `api`
-- הוסף Environment Variable: `ANTHROPIC_API_KEY`
-- Build Command: `npm install`
-- Start Command: `npm start`
+**העלאה אוטומטית ל-Render:**
+1. היכנס ל-[Render](https://render.com) → New → Web Service
+2. חבר את ה-repo: https://github.com/stech-il/auto
+3. Render יזהה אוטומטית את `render.yaml` (rootDir: api)
+4. הוסף Environment Variable: `ANTHROPIC_API_KEY` (מפתח מ-[Anthropic](https://console.anthropic.com/))
+5. Deploy – כל push ל-`main` מפעיל פריסה אוטומטית
 
 ### 2. תוסף וורדפרס
 
