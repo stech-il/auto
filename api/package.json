@@ -1,0 +1,17 @@
+{
+  "name": "wp-ai-builder-api",
+  "version": "1.0.0",
+  "description": "API for AI-powered WordPress site builder",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0"
+  }
+}

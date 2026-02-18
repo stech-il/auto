@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: wp-ai-builder-api
+    env: node
+    rootDir: api
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: LICENSE_MODE
+        value: strict

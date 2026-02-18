@@ -1,0 +1,127 @@
+.wpai-builder-wrap {
+    max-width: 800px;
+    margin-top: 20px;
+}
+
+.wpai-desc {
+    font-size: 1.1em;
+    color: #646970;
+    margin-bottom: 24px;
+}
+
+.wpai-settings-card,
+.wpai-build-card {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+    padding: 24px;
+    margin-bottom: 24px;
+}
+
+.wpai-settings-card h2,
+.wpai-build-card h2 {
+    margin-top: 0;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #eee;
+}
+
+.wpai-prompt-box label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.wpai-prompt-box textarea {
+    width: 100%;
+    max-width: 100%;
+    padding: 12px;
+    font-size: 14px;
+    border: 1px solid #8c8f94;
+    border-radius: 4px;
+    margin-bottom: 16px;
+    min-height: 120px;
+}
+
+.wpai-prompt-box textarea:focus {
+    border-color: #2271b1;
+    box-shadow: 0 0 0 1px #2271b1;
+    outline: none;
+}
+
+.wpai-build-btn {
+    font-size: 16px !important;
+    padding: 12px 24px !important;
+    height: auto !important;
+}
+
+.wpai-build-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.wpai-validate-btn {
+    margin-right: 8px;
+}
+
+.wpai-license-status {
+    font-weight: 600;
+}
+
+.wpai-license-status.valid {
+    color: #00a32a;
+}
+
+.wpai-license-status.invalid {
+    color: #d63638;
+}
+
+.wpai-progress {
+    padding: 24px;
+    text-align: center;
+    background: #f6f7f7;
+    border-radius: 4px;
+    margin: 16px 0;
+}
+
+.wpai-spinner {
+    width: 40px;
+    height: 40px;
+    margin: 0 auto 12px;
+    border: 3px solid #e0e0e0;
+    border-top-color: #2271b1;
+    border-radius: 50%;
+    animation: wpai-spin 0.8s linear infinite;
+}
+
+@keyframes wpai-spin {
+    to { transform: rotate(360deg); }
+}
+
+.wpai-status {
+    margin: 0;
+    color: #646970;
+}
+
+.wpai-result {
+    padding: 16px;
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    border-radius: 4px;
+    color: #155724;
+    margin-top: 16px;
+}
+
+.wpai-result ul {
+    margin: 8px 0 0 20px;
+    padding: 0;
+}
+
+.wpai-error {
+    padding: 16px;
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    border-radius: 4px;
+    color: #721c24;
+    margin-top: 16px;
+}
