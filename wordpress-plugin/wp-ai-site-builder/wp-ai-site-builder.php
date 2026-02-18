@@ -94,7 +94,7 @@ class WP_AI_Site_Builder {
                             <td>
                                 <input type="url" id="wpai_api_url" name="wpai_api_url"
                                        value="<?php echo esc_attr($api_url); ?>"
-                                       class="regular-text" placeholder="https://your-api.onrender.com"/>
+                                       class="regular-text" placeholder="https://wp-ai-builder-api.onrender.com"/>
                                 <p class="description">כתובת ה-API שרץ על Render</p>
                             </td>
                         </tr>
