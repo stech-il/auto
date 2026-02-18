@@ -1,3 +1,5 @@
+import { getByKey } from './licenses.js';
+
 export const validateLicense = (licenseKey) => {
   if (process.env.LICENSE_MODE === 'skip') {
     return { valid: true, userId: 'dev-user' };
@@ -5,5 +7,9 @@ export const validateLicense = (licenseKey) => {
   if (!licenseKey || licenseKey.length < 10) {
     return { valid: false };
   }
-  return { valid: true, userId: licenseKey };
+  const license = getByKey(licenseKey);
+  if (!license) {
+    return { valid: false };
+  }
+  return { valid: true, userId: license.id };
 };

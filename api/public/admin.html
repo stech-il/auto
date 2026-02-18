@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ממשק ניהול - WP AI Site Builder</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; padding: 24px; background: #1a1a2e; color: #eee; min-height: 100vh; }
+    .container { max-width: 900px; margin: 0 auto; }
+    h1 { color: #00d9ff; margin-bottom: 8px; }
+    .sub { color: #888; margin-bottom: 24px; }
+    .card { background: #16213e; border-radius: 12px; padding: 24px; margin-bottom: 24px; border: 1px solid #0f3460; }
+    .card h2 { margin-top: 0; color: #00d9ff; font-size: 1.2rem; }
+    input, textarea, button { font-size: 16px; padding: 10px 14px; border-radius: 8px; border: 1px solid #0f3460; }
+    input, textarea { width: 100%; background: #0f3460; color: #fff; margin-bottom: 12px; }
+    input::placeholder, textarea::placeholder { color: #666; }
+    button { background: #00d9ff; color: #1a1a2e; border: none; cursor: pointer; font-weight: bold; padding: 12px 20px; }
+    button:hover { background: #00b8d9; }
+    button.danger { background: #e53935; color: #fff; }
+    button.danger:hover { background: #c62828; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .login-form { max-width: 400px; }
+    .hidden { display: none !important; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 12px; text-align: right; border-bottom: 1px solid #0f3460; }
+    th { color: #00d9ff; }
+    .key { font-family: monospace; background: #0f3460; padding: 4px 8px; border-radius: 4px; font-size: 14px; }
+    .badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; }
+    .badge.active { background: #2e7d32; color: #a5d6a7; }
+    .badge.revoked { background: #c62828; color: #ef9a9a; }
+    .copy-btn { padding: 4px 12px; font-size: 12px; margin-right: 8px; }
+    .msg { padding: 12px; border-radius: 8px; margin-bottom: 16px; }
+    .msg.success { background: #1b5e20; color: #a5d6a7; }
+    .msg.error { background: #b71c1c; color: #ef9a9a; }
+    #licenses-table { margin-top: 16px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="login-screen">
+      <h1>🔐 ממשק ניהול</h1>
+      <p class="sub">WP AI Site Builder - אישור אתרים ומתן מפתחות API</p>
+      <div class="card login-form">
+        <h2>התחברות</h2>
+        <div id="login-msg"></div>
+        <input type="password" id="password" placeholder="סיסמת מנהל">
+        <button onclick="login()">התחבר</button>
+      </div>
+    </div>
+
+    <div id="admin-screen" class="hidden">
+      <h1>🛠️ ממשק ניהול</h1>
+      <p class="sub">אישור אתרים וקבלת מפתח רישיון</p>
+
+      <div class="card">
+        <h2>➕ הנפק קוד רישיון חדש</h2>
+        <div id="create-msg"></div>
+        <div class="form-row">
+          <input type="url" id="site_url" placeholder="כתובת האתר (https://...)">
+          <input type="text" id="customer" placeholder="שם הלקוח / אימייל">
+        </div>
+        <button onclick="createLicense()">אשר והנפק קוד</button>
+      </div>
+
+      <div id="new-license-display" class="card hidden">
+        <h2>✅ קוד הרישיון שנוצר</h2>
+        <p>העבר את הקוד ללקוח – הוא יוזן בתוסף הוורדפרס:</p>
+        <p class="key" id="new-license-key"></p>
+        <button class="copy-btn" onclick="copyKey()">📋 העתק</button>
+      </div>
+
+      <div class="card">
+        <h2>📋 רישיונות קיימים</h2>
+        <button onclick="loadLicenses()" style="margin-bottom:16px">רענן</button>
+        <div id="licenses-table"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API = window.location.origin;
+    let token = localStorage.getItem('wpai_admin_token');
+
+    function show(el, show) {
+      el.classList.toggle('hidden', !show);
+    }
+
+    function msg(elId, text, type) {
+      const el = document.getElementById(elId);
+      el.innerHTML = text ? `<div class="msg ${type}">${text}</div>` : '';
+    }
+
+    async function login() {
+      const password = document.getElementById('password').value;
+      if (!password) {
+        msg('login-msg', 'הזן סיסמה', 'error');
+        return;
+      }
+      try {
+        const r = await fetch(API + '/api/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password }),
+        });
+        const data = await r.json();
+        if (data.ok && data.token) {
+          token = data.token;
+          localStorage.setItem('wpai_admin_token', token);
+          show(document.getElementById('login-screen'), false);
+          show(document.getElementById('admin-screen'), true);
+          loadLicenses();
+        } else {
+          msg('login-msg', data.error || 'סיסמה לא נכונה', 'error');
+        }
+      } catch (e) {
+        msg('login-msg', 'שגיאת תקשורת', 'error');
+      }
+    }
+
+    function logout() {
+      token = null;
+      localStorage.removeItem('wpai_admin_token');
+      show(document.getElementById('login-screen'), true);
+      show(document.getElementById('admin-screen'), false);
+      document.getElementById('password').value = '';
+    }
+
+    if (token) {
+      show(document.getElementById('login-screen'), false);
+      show(document.getElementById('admin-screen'), true);
+    }
+
+    async function createLicense() {
+      const site_url = document.getElementById('site_url').value.trim();
+      const customer = document.getElementById('customer').value.trim();
+      msg('create-msg', '');
+      try {
+        const r = await fetch(API + '/api/admin/licenses', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Admin-Token': token },
+          body: JSON.stringify({ site_url, customer }),
+        });
+        if (r.status === 401) return logout();
+        const data = await r.json();
+        if (data.key) {
+          document.getElementById('new-license-key').textContent = data.key;
+          show(document.getElementById('new-license-display'), true);
+          document.getElementById('site_url').value = '';
+          document.getElementById('customer').value = '';
+          loadLicenses();
+          msg('create-msg', 'הקוד נוצר בהצלחה', 'success');
+        } else {
+          msg('create-msg', data.error || 'שגיאה', 'error');
+        }
+      } catch (e) {
+        msg('create-msg', 'שגיאת תקשורת', 'error');
+      }
+    }
+
+    function copyKey() {
+      const key = document.getElementById('new-license-key').textContent;
+      navigator.clipboard.writeText(key).then(() => alert('הועתק!'));
+    }
+
+    async function loadLicenses() {
+      try {
+        const r = await fetch(API + '/api/admin/licenses', { headers: { 'X-Admin-Token': token } });
+        if (r.status === 401) return logout();
+        const list = await r.json();
+        const el = document.getElementById('licenses-table');
+        if (!list.length) {
+          el.innerHTML = '<p style="color:#888">אין רישיונות עדיין</p>';
+          return;
+        }
+        el.innerHTML = `
+          <table>
+            <tr><th>קוד</th><th>אתר</th><th>לקוח</th><th>סטטוס</th><th>תאריך</th><th></th></tr>
+            ${list.map(l => `
+              <tr>
+                <td><code class="key">${l.key}</code> <button class="copy-btn" onclick="navigator.clipboard.writeText('${l.key}')">העתק</button></td>
+                <td>${l.site_url || '-'}</td>
+                <td>${l.customer || '-'}</td>
+                <td><span class="badge ${l.status}">${l.status === 'active' ? 'פעיל' : 'בוטל'}</span></td>
+                <td>${new Date(l.created_at).toLocaleDateString('he-IL')}</td>
+                <td>${l.status === 'active' ? `<button class="danger copy-btn" onclick="revoke('${l.id}')">בטל</button>` : ''}</td>
+              </tr>
+            `).join('')}
+          </table>
+        `;
+      } catch (e) {
+        document.getElementById('licenses-table').innerHTML = '<p style="color:#e53935">שגיאה בטעינה</p>';
+      }
+    }
+
+    async function revoke(id) {
+      if (!confirm('לבטל רישיון זה?')) return;
+      try {
+        const r = await fetch(API + '/api/admin/licenses/' + id + '/revoke', {
+          method: 'POST',
+          headers: { 'X-Admin-Token': token },
+        });
+        if (r.status === 401) return logout();
+        loadLicenses();
+      } catch (e) {}
+    }
+  </script>
+</body>
+</html>

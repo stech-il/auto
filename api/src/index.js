@@ -1,11 +1,15 @@
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import { buildRouter } from './routes/build.js';
 import { licenseRouter } from './routes/license.js';
+import { adminRouter } from './routes/admin.js';
 
 dotenv.config();
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -28,6 +32,12 @@ app.get('/health', (req, res) => {
 
 app.use('/api/license', licenseRouter);
 app.use('/api/build', buildRouter);
+app.use('/api/admin', adminRouter);
+
+// Admin panel UI
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'admin.html'));
+});
 
 app.listen(PORT, () => {
   console.log(`WP AI Builder API running on port ${PORT}`);

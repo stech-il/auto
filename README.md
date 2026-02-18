@@ -23,8 +23,10 @@ npm start
 1. היכנס ל-[Render](https://render.com) → New → Web Service
 2. חבר את ה-repo: https://github.com/stech-il/auto
 3. Render יזהה אוטומטית את `render.yaml` (rootDir: api)
-4. הוסף Environment Variable: `ANTHROPIC_API_KEY` (מפתח מ-[Anthropic](https://console.anthropic.com/))
+4. הוסף Environment Variables: `ANTHROPIC_API_KEY`, `ADMIN_PASSWORD` (סיסמת ממשק הניהול)
 5. Deploy – כל push ל-`main` מפעיל פריסה אוטומטית
+
+**ממשק ניהול:** `https://your-api.onrender.com/admin` – התחבר עם ADMIN_PASSWORD, הנפק קודי רישיון ללקוחות
 
 ### 2. תוסף וורדפרס
 
