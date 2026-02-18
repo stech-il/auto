@@ -22,19 +22,20 @@ router.post('/login', (req, res) => {
   }
 });
 
-router.get('/licenses', adminAuth, (req, res) => {
+router.get('/licenses', adminAuth, async (req, res) => {
   try {
-    res.json(licenses.listLicenses());
+    const list = await licenses.listLicenses();
+    res.json(list);
   } catch (err) {
     console.error('listLicenses error:', err);
     res.status(500).json({ error: 'Failed to load licenses', details: err.message });
   }
 });
 
-router.post('/licenses', adminAuth, (req, res) => {
+router.post('/licenses', adminAuth, async (req, res) => {
   try {
     const { site_url, customer } = req.body || {};
-    const license = licenses.createLicense({ site_url, customer });
+    const license = await licenses.createLicense({ site_url, customer });
     res.json(license);
   } catch (err) {
     console.error('createLicense error:', err);
@@ -42,9 +43,9 @@ router.post('/licenses', adminAuth, (req, res) => {
   }
 });
 
-router.post('/licenses/:id/revoke', adminAuth, (req, res) => {
+router.post('/licenses/:id/revoke', adminAuth, async (req, res) => {
   try {
-    const updated = licenses.revokeLicense(req.params.id);
+    const updated = await licenses.revokeLicense(req.params.id);
     if (!updated) return res.status(404).json({ error: 'Not found' });
     res.json(updated);
   } catch (err) {

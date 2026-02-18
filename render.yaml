@@ -12,3 +12,7 @@ services:
         sync: false
       - key: LICENSE_MODE
         value: strict
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false

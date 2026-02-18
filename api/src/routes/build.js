@@ -15,7 +15,7 @@ router.post('/', async (req, res) => {
       });
     }
 
-    const licenseValid = validateLicense(license_key);
+    const licenseValid = await validateLicense(license_key);
     if (!licenseValid.valid) {
       return res.status(401).json({ success: false, error: 'Invalid license' });
     }

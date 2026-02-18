@@ -1,37 +1,58 @@
 import Anthropic from '@anthropic-ai/sdk';
 
-const SYSTEM_PROMPT = `You are an expert WordPress site builder. Given a user's description, you generate a complete site structure in JSON format.
+const SYSTEM_PROMPT = `You are an expert WordPress + Elementor site builder. Given a user's description, you generate a complete site structure in JSON format. ALL pages MUST use Elementor layout format.
 
 Return ONLY valid JSON with this exact structure (no markdown, no code fences):
 {
-  "theme": "string - WordPress theme slug (e.g. twentytwentyfour)",
+  "theme": "string - theme slug (e.g. astra, hello-elementor, twentytwentyfour)",
   "design": {
     "primary_color": "#hex",
     "secondary_color": "#hex",
-    "font_heading": "string",
-    "font_body": "string",
-    "style": "string - minimal/modern/creative/elegant"
+    "style": "minimal|modern|creative|elegant"
   },
   "pages": [
     {
       "slug": "string",
       "title": "string",
-      "content": "HTML content for the page",
       "menu_order": number,
-      "template": "default|full-width|etc"
+      "elementor_data": [ARRAY OF ELEMENTOR SECTIONS - see format below]
     }
   ],
-  "menu": {
-    "name": "Primary Menu",
-    "locations": ["primary"]
-  }
+  "menu": { "name": "Primary Menu", "locations": ["primary"] }
 }
 
+ELEMENTOR DATA FORMAT - each page has "elementor_data" as array of sections. Each section:
+{
+  "id": "8char-hex",
+  "elType": "section",
+  "isInner": false,
+  "settings": {},
+  "elements": [
+    {
+      "id": "8char-hex",
+      "elType": "column",
+      "isInner": false,
+      "settings": { "_column_size": 100 },
+      "elements": [WIDGETS]
+    }
+  ]
+}
+
+WIDGETS (inside column elements):
+- Heading: { "id":"8char-hex", "elType":"widget", "widgetType":"heading", "isInner":false, "settings":{ "title":"Text", "header_size":"h1"|"h2"|"h3", "align":"left"|"center"|"right" }, "elements":[] }
+- Text: { "id":"8char-hex", "elType":"widget", "widgetType":"text-editor", "isInner":false, "settings":{ "editor":"<p>HTML content</p>" }, "elements":[] }
+- Button: { "id":"8char-hex", "elType":"widget", "widgetType":"button", "isInner":false, "settings":{ "text":"Button", "link":{ "url":"#", "is_external":"" } }, "elements":[] }
+- Spacer: { "id":"8char-hex", "elType":"widget", "widgetType":"spacer", "isInner":false, "settings":{ "space": { "unit":"px", "size": 20 } }, "elements":[] }
+- Image: { "id":"8char-hex", "elType":"widget", "widgetType":"image", "isInner":false, "settings":{ "image":{ "url":"https://via.placeholder.com/800x400" }, "image_size":"large" }, "elements":[] }
+
 Rules:
-- Create 3-6 pages based on the request (Home, About, Contact, Services, etc.)
-- Use realistic Hebrew or English content matching the business type
-- Design colors and fonts should match the described style
-- Content should be professional and relevant`;
+- Use unique 8-char hex for every id (e.g. "a1b2c3d4")
+- Create 3-6 pages: Home, About, Contact, Services, etc. based on request
+- Each page: 2-4 sections with heading + text + optional button
+- Home page: hero section (big heading) + intro + CTA
+- Use Hebrew or English content matching the business type
+- For multiple columns: use "_column_size": 50 for two columns, 33 for three
+- Style: professional, relevant to business`;
 
 export async function generateSiteStructure(userPrompt) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -44,7 +65,7 @@ export async function generateSiteStructure(userPrompt) {
 
   const message = await anthropic.messages.create({
     model: 'claude-sonnet-4-5',
-    max_tokens: 4096,
+    max_tokens: 8192,
     system: SYSTEM_PROMPT,
     messages: [
       {
@@ -58,7 +79,6 @@ export async function generateSiteStructure(userPrompt) {
     ? message.content[0].text
     : '';
 
-  // Parse JSON from response (handle possible markdown wrappers)
   let jsonStr = text.trim();
   const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
   if (jsonMatch) {

@@ -114,7 +114,14 @@ class WP_AI_Site_Builder {
             </div>
 
             <div class="wpai-build-card">
-                <h2>בנה אתר חדש</h2>
+                <?php if (!class_exists('Elementor\Plugin')) : ?>
+                <div class="notice notice-warning inline" style="margin:0 0 16px">
+                    <p><strong>נדרש Elementor:</strong> התוסף בונה אתרים באלמנטור בלבד.
+                        <a href="<?php echo esc_url(admin_url('plugin-install.php?s=elementor&tab=search&type=term')); ?>">התקן Elementor</a>
+                    </p>
+                </div>
+                <?php endif; ?>
+                <h2>בנה אתר חדש (באלמנטור)</h2>
                 <div class="wpai-prompt-box">
                     <label for="wpai_prompt">פרומפט (תאר את האתר שברצונך ליצור):</label>
                     <textarea id="wpai_prompt" rows="4" placeholder="לדוגמה: אתר לחנות פרחים, עיצוב מינימליסטי ומודרני, 5 דפים - בית, אודות, מוצרים, גלריה, צור קשר"></textarea>
@@ -214,19 +221,54 @@ class WP_AI_Site_Builder {
         wp_send_json_success($result);
     }
 
+    private function ensure_elementor() {
+        if (class_exists('Elementor\Plugin')) {
+            return true;
+        }
+        if (!function_exists('get_plugins')) {
+            require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        }
+        $all = get_plugins();
+        foreach (array_keys($all) as $path) {
+            if (strpos($path, 'elementor/elementor.php') !== false || strpos($path, 'elementor.php') !== false) {
+                if (!is_plugin_active($path)) {
+                    activate_plugin($path);
+                }
+                return class_exists('Elementor\Plugin');
+            }
+        }
+        return false;
+    }
+
     private function apply_site_structure($data) {
         $created = [];
         $errors = [];
 
-        // Switch theme if needed
-        if (!empty($data['theme']) && wp_get_theme($data['theme'])->exists()) {
+        // Elementor is required
+        if (!did_action('elementor/loaded') && !class_exists('Elementor\Plugin')) {
+            $this->ensure_elementor();
+        }
+        if (!class_exists('Elementor\Plugin')) {
+            $errors[] = 'Elementor לא מותקן. התקן את Elementor לפני בניית האתר.';
+            return [
+                'created' => $created,
+                'errors' => $errors,
+                'message' => 'נדרש Elementor',
+            ];
+        }
+        $created[] = 'בנייה באלמנטור';
+
+        // Prefer Hello Elementor theme for Elementor
+        $theme = $data['theme'] ?? 'hello-elementor';
+        if ($theme === 'hello-elementor' && wp_get_theme('hello-elementor')->exists()) {
+            switch_theme('hello-elementor');
+            $created[] = "תימה: hello-elementor (מותאם לאלמנטור)";
+        } elseif (!empty($data['theme']) && wp_get_theme($data['theme'])->exists()) {
             switch_theme($data['theme']);
             $created[] = "תימה: {$data['theme']}";
-        } elseif (!empty($data['theme'])) {
-            $created[] = "תימה {$data['theme']} אינה מותקנת - השארנו את התימה הנוכחית";
         }
 
-        // Create pages
+        // Create Elementor pages
         if (!empty($data['pages']) && is_array($data['pages'])) {
             usort($data['pages'], function ($a, $b) {
                 return ($a['menu_order'] ?? 0) - ($b['menu_order'] ?? 0);
@@ -235,7 +277,6 @@ class WP_AI_Site_Builder {
             foreach ($data['pages'] as $page) {
                 $slug = sanitize_title($page['slug'] ?? $page['title'] ?? 'page');
                 $title = sanitize_text_field($page['title'] ?? 'דף חדש');
-                $content = wp_kses_post($page['content'] ?? '');
                 $order = absint($page['menu_order'] ?? 0);
 
                 $existing = get_page_by_path($slug);
@@ -247,7 +288,7 @@ class WP_AI_Site_Builder {
                 $page_id = wp_insert_post([
                     'post_title' => $title,
                     'post_name' => $slug,
-                    'post_content' => $content,
+                    'post_content' => '',
                     'post_status' => 'publish',
                     'post_type' => 'page',
                     'menu_order' => $order,
@@ -256,7 +297,18 @@ class WP_AI_Site_Builder {
 
                 if (is_wp_error($page_id)) {
                     $errors[] = "שגיאה ביצירת '{$title}': " . $page_id->get_error_message();
+                    continue;
+                }
+
+                // Set Elementor meta
+                $elementor_data = $page['elementor_data'] ?? [];
+                if (!empty($elementor_data)) {
+                    $this->set_elementor_page_meta($page_id, $elementor_data);
+                    $created[] = "נוצר דף אלמנטור: {$title}";
                 } else {
+                    // Fallback if no elementor_data - simple content
+                    $content = wp_kses_post($page['content'] ?? '');
+                    wp_update_post(['ID' => $page_id, 'post_content' => $content]);
                     $created[] = "נוצר דף: {$title}";
                 }
             }
@@ -331,6 +383,21 @@ class WP_AI_Site_Builder {
         $locations['primary'] = $menu_id;
         set_theme_mod('nav_menu_locations', $locations);
         return $menu_id;
+    }
+
+    private function set_elementor_page_meta($page_id, $elementor_data) {
+        if (!is_array($elementor_data)) {
+            $elementor_data = json_decode($elementor_data, true) ?: [];
+        }
+        update_post_meta($page_id, '_elementor_edit_mode', 'builder');
+        update_post_meta($page_id, '_elementor_template_type', 'wp-page');
+        update_post_meta($page_id, '_elementor_data', wp_json_encode($elementor_data));
+        if (defined('ELEMENTOR_VERSION')) {
+            update_post_meta($page_id, '_elementor_version', ELEMENTOR_VERSION);
+        }
+        if (defined('ELEMENTOR_PRO_VERSION')) {
+            update_post_meta($page_id, '_elementor_pro_version', ELEMENTOR_PRO_VERSION);
+        }
     }
 }
 
