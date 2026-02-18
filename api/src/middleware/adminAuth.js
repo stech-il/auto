@@ -1,9 +1,9 @@
 import crypto from 'crypto';
 
-const ADMIN_SECRET = process.env.ADMIN_SECRET || process.env.ADMIN_PASSWORD || '';
+const ADMIN_SECRET = process.env.ADMIN_SECRET || process.env.ADMIN_PASSWORD || 'admin123';
 
 function sign(payload) {
-  return crypto.createHmac('sha256', ADMIN_SECRET || 'dev').update(payload).digest('hex');
+  return crypto.createHmac('sha256', ADMIN_SECRET).update(payload).digest('hex');
 }
 
 export function createAdminToken() {
@@ -12,7 +12,7 @@ export function createAdminToken() {
 }
 
 export function verifyAdminToken(token) {
-  if (!ADMIN_SECRET && !ADMIN_PASSWORD) return false;
+  if (!ADMIN_SECRET) return false;
   if (!token) return false;
   const [payloadB64, sig] = String(token).split('.');
   if (!payloadB64 || !sig) return false;
@@ -28,9 +28,14 @@ export function verifyAdminToken(token) {
 }
 
 export function adminAuth(req, res, next) {
-  const token = req.headers['x-admin-token'] || req.query.token;
-  if (verifyAdminToken(token)) {
-    return next();
+  try {
+    const token = req.headers['x-admin-token'] || req.query.token;
+    if (verifyAdminToken(token)) {
+      return next();
+    }
+    res.status(401).json({ error: 'Unauthorized' });
+  } catch (err) {
+    console.error('adminAuth error:', err);
+    res.status(500).json({ error: 'Auth check failed' });
   }
-  res.status(401).json({ error: 'Unauthorized' });
 }
